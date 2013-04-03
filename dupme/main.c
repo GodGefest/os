@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     while (1) {
         read_return = read(STDIN, buffer + cur_busy, k - cur_busy); 
                                     printf("read_return = %d\n", read_return);
-        if (read_return = 0) {
+        if (read_return == 0) {
             eof = 1;
         } else if (read_return < 0) {
             return 1;
