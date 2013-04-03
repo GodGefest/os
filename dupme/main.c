@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 #define STDIN 0
@@ -19,21 +18,32 @@ int _print (char* buffer, int from, int to){
     return 0;
 }
 
+int _read (char* arg) {
+    int size = 0;
+    int i = 0;
+    while(arg[i] != 0) {
+        size *= 10;
+        size += arg[i] - 48;
+        i++;
+    }
+    return size;
+}
+
+int k = 0;
+char* buffer = 0;
+int read_return = 0;
+int used = 0;
+int eof = 0;
+int ignoring = 0;
+int from = 0;
+int to = 0;
+int i;
 
 int main(int argc, char** argv) {
-    int k = 0;
-    char* buffer = 0;
-    int read_return = 0;
-    int used = 0;
-    int eof = 0;
-    int ignoring = 0;
-    int from = 0;
-    int to = 0;
-    int i;
     if (argc < 2) {
         return 1;
     }
-    k = atoi(argv[1]);
+    k = _read(argv[1]); 
     if (k < 1) {
         return 1;
     }
@@ -58,8 +68,12 @@ int main(int argc, char** argv) {
                     ignoring = 0; 
                 }
                 to = i + 1;
-                _print(buffer, from, to);
-                _print(buffer, from, to);
+                if (_print(buffer, from, to) < 0) {
+                    return 1;
+                };
+                if (_print(buffer, from, to) < 0) {
+                    return 1;
+                };
                 from = i + 1;
             }
         }
