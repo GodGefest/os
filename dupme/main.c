@@ -11,7 +11,6 @@ int _print (char* buffer, int from, int to){
     int write_return = 0;
     while (from_after < to) {
         write_return = write(STDOUT, buffer + from_after, to - from_after);
-                                    //printf("from = %d, to = %d, write_return = %d\n", from, to, write_return);
         if (write < 0) {
             return -1;
         }
@@ -39,10 +38,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     buffer = malloc(++k);
-                     //               printf("k = %d\n", k);
     while (1) {
         read_return = read(STDIN, buffer + used, k - used); 
-                    //                printf("read_return = %d\n", read_return);
         if (read_return == 0) {
             eof = 1;
             if (used > 0 && !ignoring) {
@@ -55,10 +52,8 @@ int main(int argc, char** argv) {
         }
         from = 0;
         for (i = used; i < used + read_return; ++i) {
-                   //                 printf("buffer[%d] = %d\n", i, buffer[i]);
             if (buffer[i] == '\n') {
                 if (ignoring) {
-                  //                  printf("ignoring\n");
                     from = i + 1;
                     ignoring = 0; 
                 }
