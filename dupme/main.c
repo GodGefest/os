@@ -5,14 +5,14 @@
 #define STDIN 0
 #define STDOUT 1
 
-//return values: 0 - is ok, 1 - smth wrong
+//return values: 0 - is ok, -1 - smth wrong
 int _print (char* buffer, int from, int to){
     int from_after = from;
     int write_return = 0;
     while (from_after < to) {
         write_return = write(STDOUT, buffer + from_after, to - from_after);
         if (write < 0) {
-            return 1;
+            return -1;
         }
         from_after += write_return;
     }
