@@ -11,6 +11,10 @@ int main(int argc, char** argv) {
     int read_return = 0;
     int cur_busy = 0;
     int eof = 0;
+    int ignoring = 0;
+    int from = 0;
+    int to = 0;
+    int i;
     if (argc < 2) {
         return 1;
     }
@@ -27,10 +31,20 @@ int main(int argc, char** argv) {
             eof = 1;
         } else if (read_return < 0) {
             return 1;
+        } else {
+            from = 0;
+            for (i = cur_busy; i < cur_busy + read_return; ++i) {
+                if (buffer[i] == '\n') {
+                    if (ignoring) {
+                        from = i + 1;
+                        ignoring = 0; 
+                    }
+                }
+            }
         }
         if (eof) {
-           break;
-        } 
+            break;
+        }
     }
     return 0;
 }
