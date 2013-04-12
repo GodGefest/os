@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
 #define STDIN 0
 
 int find_del(char d, char* buf, int count) {
@@ -18,6 +19,8 @@ int run_cmd_on(char* buffer, char* argv[], int argc, int from, int to) {
     int i;
     char* _argv[argc - optind + 1];
     int j = 0;
+   // int STDOUTcp = dup(1);
+    int devnull = open("/dev/null", O_WRONLY);
     while (argv[j + optind][0] != '{' || argv[j + optind][1] != '}' || argv[j + optind][2] != 0) {
         j++;
     } 
@@ -35,12 +38,14 @@ int run_cmd_on(char* buffer, char* argv[], int argc, int from, int to) {
     int pid;
     int stat_val;
     if(pid = fork()) {
-        waitpid(pid, &stat_val, NULL);
-        if (WIFEXITED(stat_val) && WEXITSTATUS(stat_val) == 0) {
-            write(1, tmp, to); //sdjlsajdjsakld 
+        wait(&stat_val);
+        if (WIFEXITED(stat_val) && (WEXITSTATUS(stat_val) == 0)) {
+    //        dup2(STDOUTcp, 1);
+            write(1, tmp, to);
         }
+        close(devnull);
     } else {
-        execvp(_argv[0], _argv + 1);
+        execvp(_argv[0], _argv);
     }
     return 0;
 }
