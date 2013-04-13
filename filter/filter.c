@@ -3,7 +3,20 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
+
 #define STDIN 0
+#define STDOUT 1
+
+void print(int fd, char *str, int len) {
+    int printed = 0;
+    while (printed < len) {
+        printed += write(fd, str + printed, 
+                                       len - printed);
+    }
+    if (str[len - 1] != '\n') {
+        write(fd, "\n", 1);
+    }
+}
 
 int find_del(char d, char* buf, int count) {
     int i = 0;
@@ -25,7 +38,7 @@ int run_cmd_on(char* _argv[], int to, int j) {
         wait(&stat_val);
         if (WIFEXITED(stat_val) && (WEXITSTATUS(stat_val) == 0)) {
     //        dup2(STDOUTcp, 1);
-            write(1, _argv[j], to);
+            print(STDOUT, _argv[j], to);
         }
         close(devnull);
     } else {
