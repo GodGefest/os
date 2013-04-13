@@ -40,6 +40,7 @@ int run_cmd_on(char* _argv[], int to, int j) {
         close(devnull);
     } else {
         execvp(_argv[0], _argv);
+        exit(1);
     }
     return 0;
 }
@@ -86,34 +87,32 @@ int main(int argc, char* argv[])
     
     while(!eof) {
         read_res = read(STDIN, buffer + len, buf_size - len);
-        //EOF - ?
         if (read_res == 0) {
             eof = 1;
         }
-        int d_pos = find_del(flag, buffer + len, read_res);
+        int d_pos = find_del(flag, buffer + len, read_res) + len;
         len = len + read_res;
         if (d_pos != -1) {
             while (d_pos != -1) { 
                 char * tmp = malloc(sizeof(char) * (d_pos + 1));
+                tmp[d_pos] = 0;
                 memcpy(tmp, buffer, d_pos);
                 _argv[j] = tmp;
                 run_cmd_on(_argv, d_pos, j);
                 free(tmp);
-                memmove(buffer, buffer + d_pos + 1, len - d_pos - 1);
+                memmove(buffer, buffer + d_pos + 1, sizeof(char) * (len - d_pos - 1));
                 len = len - d_pos - 1;
                 d_pos = find_del(flag, buffer, len);
             }
         }
     }
     if (len > 0) {
-        if (len + 1 >= buf_size) {
-            return -3;
-        }
-        buffer[len + 1] = flag;
-        char * tmp = malloc(len + 1 - 0);
-        memcpy(tmp, buffer, len + 1);
+        buffer[len] = flag;
+        len++;
+        char * tmp = malloc(len);
+        memcpy(tmp, buffer, len);
         _argv[j] = tmp;
-        run_cmd_on(_argv, len + 1, j);
+        run_cmd_on(_argv, len, j);
         free(tmp);
     }
     free(_argv);
