@@ -29,15 +29,12 @@ int find_del(char d, char* buf, int count) {
 }
 
 int run_cmd_on(char* _argv[], int to, int j) {
-    int i;
-    int STDOUTcp = dup(1);
     int devnull = open("/dev/null", O_WRONLY);
     int pid;
     int stat_val;
     if(pid = fork()) {
         wait(&stat_val);
         if (WIFEXITED(stat_val) && (WEXITSTATUS(stat_val) == 0)) {
-    //        dup2(STDOUTcp, 1);
             print(STDOUT, _argv[j], to);
         }
         close(devnull);
@@ -76,7 +73,6 @@ int main(int argc, char* argv[])
     int len = 0; 
     int read_res = 0;
     int j = 0;
-    int i = 0;
     int eof = 0;
     char** _argv = malloc(sizeof(char*) * (argc - optind + 1));
     while (argv[j + optind][0] != '{' || argv[j + optind][1] != '}' || argv[j + optind][2] != 0) {
