@@ -72,7 +72,8 @@ void find_broken_symlinks(char * const prefix)
     while ((file = readdir(dirp)) != NULL)
     {
         if (strings_differ(file->d_name, ".") && 
-                strings_differ(file->d_name, ".."))
+                strings_differ(file->d_name, "..") &&
+                file->d_name[0] != '.')
         {
             _strcat(filename, file->d_name);
             if ((file->d_type == DT_LNK) && (access(filename, F_OK) == -1))
