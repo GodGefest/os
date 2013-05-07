@@ -4,6 +4,19 @@
 #define STDIN 0
 #define STDOUT 1
 
+int find_del(char* str, int len) 
+{
+    int i;
+    for (i = 0; i < len - 1; i++)
+    {
+        if(str[i] == '\0' && str[i + 1] == '\0')
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
 int read_from_source(const int fd) 
 {
     const int buf_size = 4096;
