@@ -4,27 +4,26 @@ for file in "$@"
 do
     if [[ -a "$file" ]] 
     then
-	echo "$file"
-        read new_file
+        read -e -p "Edit file name: " -i "$(basename "$file")" new_file
+        dir_name=`dirname "$file"`
         if [[ !(-a "$new_file") && -n "$new_file" ]]
-	then
-	    mv "$file" "$new_file"
-	else	
-	    while [[ (-a "$new_file" && "$new_file" != "$file") || !(-n "$new_file") ]]
-	    do
-		if [[ !(-a "$new_file") && -n "$new_file" ]]
-		then
-		    mv "$file" "$new_file"
-		elif [[ -a "$new_file" && "$new_file" != "$file" ]] 
-		then 
-		    echo File with such name already exists.
-		elif [[ !(-n "$new_file") ]]
-		then 
-		    echo You can\'t to have file with empty name.
-		fi
-		    echo "$file"
-		    read new_file
-	    done
-	fi
+        then
+            mv "$file" "${dir_name}/${new_file}"
+        else	
+            while [[ (-a "$new_file" && "$new_file" != "$file") || !(-n "$new_file") ]]
+            do
+                if [[ !(-a "$new_file") && -n "$new_file" ]]
+                then
+                    mv "$file" "${dir_name}/${new_file}"
+                elif [[ -a "$new_file" && "$new_file" != "$file" ]] 
+                then 
+                    echo File with such name already exists.
+                elif [[ !(-n "$new_file") ]]
+                then 
+                    echo You can\'t to have file with empty name.
+                fi
+                read -e -p "Edit file name: " -i "$(basename "$file")" new_file
+            done
+        fi
     fi    
 done    
