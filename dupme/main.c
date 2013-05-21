@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define STDIN 0
 #define STDOUT 1
@@ -10,7 +11,7 @@ int _print (char* buffer, int from, int to){
     int write_return = 0;
     while (from_after < to) {
         write_return = write(STDOUT, buffer + from_after, to - from_after);
-        if (write < 0) {
+        if (write_return < 0) {
             return -1;
         }
         from_after += write_return;
