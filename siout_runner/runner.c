@@ -34,8 +34,8 @@ int find_new_word(char* str, int len)
 
 int cmd_exec(char* input, char** cmd, char* output)
 {
-    int pid;
-    if (pid = fork())
+    int pid = fork();
+    if (pid)
     {
 
     }
