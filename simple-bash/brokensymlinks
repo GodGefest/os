@@ -1,0 +1,37 @@
+#!/bin/bash
+
+find_brokensymlinks()
+{
+    dirn="$(dirname "$1")"
+    if [[ $dirn = / ]]
+    then 
+        dirn=""
+    fi
+    basen="$(basename "$1")"
+    if [[ $basen = / ]]
+    then 
+        dirn=""
+    fi
+    cur_file="$dirn/$basen"
+    if [[ -e "$cur_file" && !(-L "$cur_file") ]]
+    then
+        if [[ -d "$cur_file" ]]
+        then
+            for subfile in "$cur_file"/*
+            do
+                find_brokensymlinks "$subfile"
+            done
+       fi
+    elif [[ !(-e "$cur_file") && (-L "$cur_file") ]]
+    then
+       echo "$cur_file"
+    fi 
+}
+
+
+shopt -s nullglob
+for file in "$@"
+do
+    find_brokensymlinks "$file"
+done
+
