@@ -6,7 +6,7 @@
 #define STDOUT 1
 
 //return values: 0 - is ok, -1 - smth wrong
-int _print (char* buffer, int from, int to){
+int print_ (char* buffer, int from, int to){
     int from_after = from;
     int write_return = 0;
     while (from_after < to) {
@@ -19,7 +19,15 @@ int _print (char* buffer, int from, int to){
     return 0;
 }
 
-int _read (char* arg) {
+void* my_alloc(size_t size)
+{
+    void *data = malloc(size);
+    if (data == 0)
+        _exit(EXIT_FAILURE);
+    return data;
+}
+
+int read_ (char* arg) {
     int size = 0;
     int i = 0;
     while(arg[i] != 0) {
@@ -44,11 +52,11 @@ int main(int argc, char** argv) {
     if (argc < 2) {
         return 1;
     }
-    k = _read(argv[1]); 
+    k = read_(argv[1]); 
     if (k < 1) {
         return 1;
     }
-    buffer = malloc(++k);
+    buffer = my_alloc(++k);
     while (1) {
         read_return = read(STDIN, buffer + used, k - used); 
         if (read_return == 0) {
@@ -69,10 +77,10 @@ int main(int argc, char** argv) {
                     ignoring = 0; 
                 }
                 to = i + 1;
-                if (_print(buffer, from, to) < 0) {
+                if (print_(buffer, from, to) < 0) {
                     return 1;
                 };
-                if (_print(buffer, from, to) < 0) {
+                if (print_(buffer, from, to) < 0) {
                     return 1;
                 };
                 from = i + 1;
