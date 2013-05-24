@@ -4,10 +4,13 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <stdio.h>
 
 #define STDIN 0
 #define STDOUT 1
 #define STDERR 2
+
+#define MAX_COUNT_OF_CONNECTIONS 5
 
 int my_write(int fd, const char *str, int len)
 {
@@ -57,6 +60,9 @@ int main()
         {
             continue;
         }
+
+        int opt_val = 1;
+        setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &opt_val, sizeof(int));
         
         if (bind(sfd, it->ai_addr, it->ai_addrlen) == 0)
         {
@@ -73,6 +79,20 @@ int main()
     }
 
     freeaddrinfo(result);
+    
+    int listen_res = listen(sfd, MAX_COUNT_OF_CONNECTIONS);
+    if (listen_res == -1) 
+    {
+        perror("Listen failed");
+    }
+
+    struct sockaddr address;
+    socklen_t address_len = sizeof(address);
+
+    while (true)
+    {
+        accept(sfd, &address, &address_len); 
+    }
 
     return 0;
 }
