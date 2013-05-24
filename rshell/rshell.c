@@ -47,5 +47,32 @@ int main()
         my_write(STDERR, error, strlen(error)); 
         exit(EXIT_FAILURE);
     }
+
+    int sfd;
+    struct addrinfo *it; 
+    for (it = result; it != 0; it = it->ai_next)
+    {
+        sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+        if (sfd == -1)
+        {
+            continue;
+        }
+        
+        if (bind(sfd, it->ai_addr, it->ai_addrlen) == 0)
+        {
+            break;
+        }
+        close(sfd);
+    } 
+
+    if (it == NULL)
+    {
+        const char *error = "Coudln't bind\n";
+        my_write(STDERR, error, strlen(error));
+        exit(EXIT_FAILURE);
+    }
+
+    freeaddrinfo(result);
+
     return 0;
 }
