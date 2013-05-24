@@ -5,3 +5,8 @@ filter
 runner
 *swp*
 rshell
+input
+output*
+gen*
+test*
+
