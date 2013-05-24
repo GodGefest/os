@@ -1,2 +1,2 @@
-all:
-	g++ runner.c -o runner
+all: runner.c
+	g++ -Wall -Wextra -Werror runner.c -o runner
