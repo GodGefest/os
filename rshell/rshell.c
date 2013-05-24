@@ -91,8 +91,27 @@ int main()
 
     while (true)
     {
-        accept(sfd, &address, &address_len); 
+        int cfd = accept(sfd, &address, &address_len); 
+        
+        int pid = fork();
+        if (pid)
+        {
+            close(cfd);
+        }
+        else 
+        {
+            dup2(cfd, STDIN);
+            dup2(cfd, STDOUT);
+            dup2(cfd, STDERR);
+            close(sfd);
+            const char *message = "Hello world!\n";
+            my_write(cfd, message, strlen(message));
+            close(cfd);
+            exit(0);
+        }
+
     }
 
+    close(sfd);
     return 0;
 }
