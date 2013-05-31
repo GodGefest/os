@@ -1,10 +1,10 @@
 *~
 main
-midterm
-filter
+midterm/midterm
+filter/filter
 runner
 *swp*
-rshell
+rshell/rshell
 input
 output*
 gen*
