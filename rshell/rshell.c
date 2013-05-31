@@ -97,17 +97,12 @@ int main()
             }
             else 
             {
-               // dup2(cfd, STDIN);
-               // dup2(cfd, STDOUT);
-               // dup2(cfd, STDERR);
                 close(STDIN);
                 close(STDOUT);
                 close(STDERR);
                 close(sfd);
                 int master, slave;
                 char buf[4096];
-                fcntl(master, F_SETFL, fcntl(master, F_GETFL) | O_NONBLOCK);
-                fcntl(cfd, F_SETFL, fcntl(cfd, F_GETFL) | O_NONBLOCK);
                 openpty(&master, &slave, buf, NULL, NULL);
                 if (fork())
                 {
