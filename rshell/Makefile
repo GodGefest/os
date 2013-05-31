@@ -1,2 +1,2 @@
 all: rshell.c
-	gcc -Wall -Wextra -Werror rshell.c -o rshell
+	g++ -Wall -Wextra -Werror -lutil rshell.c -o rshell
