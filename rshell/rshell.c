@@ -61,27 +61,14 @@ int main()
             exit(EXIT_FAILURE);
         }
 
-        int sfd;
         struct addrinfo *it; 
-        for (it = result; it != 0; it = it->ai_next)
-        {
-            sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
-            if (sfd == -1)
-            {
-                continue;
-            }
+        it = result;
+        int sfd = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
-            int opt_val = 1;
-            setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &opt_val, sizeof(int));
-            
-            if (bind(sfd, it->ai_addr, it->ai_addrlen) == 0)
-            {
-                break;
-            }
-            close(sfd);
-        } 
-
-        if (it == NULL)
+        int opt_val = 1;
+        setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &opt_val, sizeof(int));
+        
+        if (bind(sfd, it->ai_addr, it->ai_addrlen) == -1)
         {
             const char *error = "Coudln't bind\n";
             my_write(STDERR, error, strlen(error));
