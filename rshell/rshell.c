@@ -32,7 +32,7 @@ struct FD_pair
 
     bool both_dead()
     {
-        return (!deads[0] && !deads[1]);
+        return (deads[0] && deads[1]);
     }
 
 };
@@ -54,6 +54,8 @@ void my_poll(int fd1, int fd2)
     fds[1].events = POLLIN;
     while (!fdp[0].both_dead() && !fdp[1].both_dead()) 
     {
+        fds[0].events = 0;
+        fds[1].events = 1;
         int ret = poll(fds, 2, -1);
         if (ret > 0) 
         {
@@ -116,6 +118,7 @@ void my_poll(int fd1, int fd2)
         if (len2to1 > 0 && !fdp[1].deads[1])
             fds[0].events |= POLLOUT;
         }
+
     }
     return;
 }
@@ -228,7 +231,7 @@ int main()
                     close(cfd);
                     int fd = open(buf, O_RDWR);
                     close(fd);
-                    execl("/bin/bash", "/bin/bash", NULL);
+                    execl("/bin/sh", "/bin/sh", NULL);
                 }
             }
 
