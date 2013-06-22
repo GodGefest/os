@@ -1,2 +1,2 @@
 all:
-	g++ bintreed.c -o bintreed
+	g++ -Wall -Wextra -Werror -g bintreed.cpp -o bintreed
