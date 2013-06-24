@@ -259,13 +259,14 @@ string print(node *tree, string path)
     node *what = find_node(tree, path);
     if (what == NULL)
     {
-        return "error: wrong path";
+        return "error: wrong path\n";
     }
-    return "ok: " + node2str(what); 
+    return "ok: " + node2str(what) + "\n"; 
 }
 
 const string bad_path_mes = "bad path\n";
 const string bad_tree_mes = "bad tree\n";
+const string bad_command_mes = "bad command\n";
 const string ok_mes = "ok\n";
 
 void print_res(int fd, int status)
@@ -279,12 +280,47 @@ void print_res(int fd, int status)
     {
         my_write(fd, bad_tree_mes.c_str(), bad_tree_mes.size());
     }
+    if (status == BAD_COMMAND)
+    {
+        my_write(fd, bad_command_mes.c_str(), bad_command_mes.size());
+    }
     if (status == OK)
     {
         my_write(fd, ok_mes.c_str(), ok_mes.size());
     }
 }
 
+bool check_tree(string &s)
+{
+    bool last_is_closed;
+    int status = 0;
+    int count = 0;
+    for (size_t i = 0; i < s.size(); i++)
+    {
+        if (s[i] == '>')
+        {
+            last_is_closed = true;
+            status++;
+            if (status == 0)
+            {
+                count++;
+            }
+        }
+        if (s[i] == '<') 
+        {
+            last_is_closed = false;
+            status--;
+        }
+    }
+    if (last_is_closed && (count < 2))
+    {
+        return false;
+    }
+    else 
+    {
+        return true;
+    }
+}
 
 int main()
 {
@@ -363,15 +399,14 @@ int main()
                 }
                 if (fd[i].revents & POLLIN)
                 {
-                     int len = my_read(fd[i].fd, buffer, buffer_size);
-                     string mes;
-                     buffer[len - 1] = '\0';
+                     my_read(fd[i].fd, buffer, buffer_size);
+                //     buffer[len - 1] = '\0';
                      string s(buffer);
                      size_t first_space = s.find(' ');
                      size_t second_space = s.find(' ', first_space + 1);
                      if (second_space == string::npos)
                      {
-                        second_space = s.size();
+                        second_space = s.size() - 1;
                      }
                      string command = s.substr(0, first_space);
                      string path = 
@@ -382,6 +417,13 @@ int main()
                          {
                              string tree_desc = 
                                  s.substr(second_space + 1, s.size() - second_space - 1);
+                             while (!check_tree(tree_desc))
+                             {
+                                 memset(buffer, 0, sizeof(char) * buffer_size);
+                                 my_read(fd[i].fd, buffer, buffer_size);
+                                 string tmp(buffer);
+                                 tree_desc += tmp;
+                             }
                              int add_ans = add(root, path, tree_desc);
                              print_res(fd[i].fd, add_ans);
                          }
@@ -423,6 +465,7 @@ int main()
                 fd[clients].events = POLLIN;
                 clients++;
             }
+            memset(buffer, 0, sizeof(char) * buffer_size);
 
         }
 
