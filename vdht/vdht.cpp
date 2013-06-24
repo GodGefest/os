@@ -11,6 +11,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <utility>
+#include <set>
+#include <algorithm>
 
 #define STDIN 0
 #define STDOUT 1
@@ -74,20 +77,177 @@ struct addr {
     string port;
 
     addr(string ip, string port) : ip(ip), port(port) {}
-
 };
 
+struct mes {
+    string key;
+    string value;
+    string new_value;
+    string id;
+};
 
+int check_ready(const pair<char *, int> &p)
+{
+    for (int i = 0; i < p.second; ++i)
+    {
+        if (p.first[i] == '#')
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool is_print(const pair<char *, int> &p)
+{
+    if (p.second > 6)
+    {
+        if (p.first[0] == 'p' && p.first[1] == 'r' && p.first[2] == 'i' && 
+                p.first[3] == 'n' && p.first[4] == 't' && p.first[5] == '\n')
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool check_correct(const pair<char *, int> &p, int len)
+{
+    int count_ats = 0;
+    int count_lets = 0;
+    for (int i = 0; i < len; ++i)
+    {
+        if (p.first[i] == '@')
+        {
+            count_ats++;
+            if (count_lets == 0)
+            {
+                return false;
+            }
+            count_lets = 0;
+        }
+        else
+        {
+            count_lets++;
+        }
+    }
+    if (count_lets > 0 && count_ats == 3)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    } 
+}
+
+mes parse(const pair<char *, int> &p, int del)
+{
+    int from = 0;
+    int to = 0;
+    int state = 0;
+    mes m;
+    for (int i = 0; i < del; i++)
+    {
+        if (p.first[i] == '@')
+        {
+            to = i;
+            if (state == 0)
+            {
+                m.key = string(p.first[from], to - from);
+            }
+            if (state == 1)
+            {
+                m.value = string(p.first[from], to - from);
+            }
+            if (state == 2)
+            {
+                m.new_value = string(p.first[from], to - from);
+            }
+            if (state == 3)
+            {
+                m.id = string(p.first[from], to - from);
+            }
+            state++;
+            from = i + 1;
+        }
+    }
+    return m;
+}
+
+bool is_again(map<string, pair<vector<string>, 
+        set<string> > >::iterator it, mes message)
+{
+    if ((it->second).second.find(message.id) != it->second.second.end())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool is_collision(map<string, pair<vector<string>, 
+        set<string> > >::iterator it, mes message)
+{
+    vector<string> v = it->second.first;
+    if (find(v.begin(), v.end(), message.value) != v.end())
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+void add(map<string, pair<vector<string>, set<string> > > &m, mes message)
+{
+    m[message.value].first.push_back(message.new_value);
+    m[message.value].second.insert(message.id);
+}
+
+string mes2str(mes message)
+{
+    return message.key + "@" + message.value + "@" + message.new_value + "@" 
+        + message.id + "#";
+}
+
+void send2all(vector<pair<char*, int> > &bufs, string message, size_t j)
+{
+    for (size_t i = 4; i < bufs.size(); i += 2)
+    {
+        if (j != i)
+        {
+            for (size_t k = 0; k < message.size(); ++k)
+            {
+                bufs[i].first[bufs[i].second + k] = message[k];
+            }
+        }
+    }
+}
+
+//format key@value@new_value@id#
+// collision = $$$
 int main(int argc, char* argv[])
 {
-
+    int id = 1;
+    const string collision = "$$$";
     int clients = 3;
     pollfd fd[MAX_COUNT_OF_CONNECTIONS + 3];
 
     string port(argv[1]); 
     vector<addr> css;
-    map<string, <vector<string> > > m;
-    vector<char*> bufs(3);
+    map<string, pair<vector<string>, set<string> > > m;
+    vector<pair<char*, int> > bufs(3);
 
     for (int i = 2; i < argc; ++i)
     {
@@ -126,10 +286,13 @@ int main(int argc, char* argv[])
             exit(EXIT_FAILURE);
         }
         perror("connected");
-        clients++;
-        fd[i + 3].fd = cfd;
-        fd[i + 3].events = POLLIN;
-        bufs.push_back((char *) malloc(BUF_SIZE));
+        clients += 2;
+        fd[2 * i + 3].fd = cfd;
+        fd[2 * i + 3].events = POLLIN;
+        fd[2 * i + 4].fd = cfd;
+        fd[2 * i + 4].events = POLLOUT;
+        bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
+        bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
 
         freeaddrinfo(result_c);
     }
@@ -171,12 +334,12 @@ int main(int argc, char* argv[])
         exit(EXIT_FAILURE);
     }
 
-    fd[0].fd = STDIN;
+    fd[1].fd = STDIN;
+    fd[1].events = POLLIN;
+    fd[2].fd = STDOUT;
+    fd[2].events = POLLOUT;
+    fd[0].fd = sfd;
     fd[0].events = POLLIN;
-    fd[1].fd = STDOUT;
-    fd[1].events = POLLOUT;
-    fd[2].fd = sfd;
-    fd[2].events = POLLIN;
 
     struct sockaddr address;
     socklen_t address_len = sizeof(address);
@@ -185,7 +348,7 @@ int main(int argc, char* argv[])
     while (true)
     {
         my_poll(fd, clients);
-        for (int i = 3; i < clients; i++)
+        for (int i = 2; i < clients; i++)
         {
             if (fd[i].revents & (POLLERR | POLLHUP))
             {
@@ -196,10 +359,92 @@ int main(int argc, char* argv[])
             }
             if (fd[i].revents & POLLIN)
             {
-                 
+                int len = my_read(fd[i].fd, bufs[i].first + bufs[i].second, 
+                        BUF_SIZE - bufs[i].second);
+                bufs[i].second += len;
+                if (int delim = check_ready(bufs[i]) != -1)
+                {
+                    if (check_correct(bufs[i], delim))
+                    {
+                        mes message = parse(bufs[i], delim);
+                        if (message.new_value == collision)
+                        {
+                            add(m, message);
+                            string str = mes2str(message);
+                            send2all(bufs, str, i);
+                        }
+                        else
+                        { 
+                            auto it = m.find(message.key);
+                            if (it == m.end())
+                            {
+                                if (message.value == collision)
+                                {
+                                    pair<vector<string>, set<string> > p;
+                                    p.first = vector<string>();
+                                    p.second = set<string>();
+                                    p.first.push_back(message.new_value);
+                                    p.second.insert(message.id);
+                                    m[message.key] = p;
+                                }
+                            }
+                            else
+                            {
+                                if (!is_again(it, message))
+                                {
+                                    if (is_collision(it, message))
+                                    {
+                                        message.new_value = collision;
+                                    }
+                                    add(m, message);
+                                    string str = mes2str(message);
+                                    send2all(bufs, str, i);
+                                }
+                            }
+                        }
+                    }
+                    bufs[i].second -= delim - 1;
+                    memmove(bufs[i].first, bufs[i].first + delim + 1, 
+                                sizeof(char) * (delim + 1)); 
+                } 
+
+            }
+            if (fd[i].revents & POLLOUT)
+            {
+                if (bufs[i].second > 0)
+                {
+                    int tmp = write(fd[i].fd, bufs[i].first, bufs[i].second);
+                    bufs[i].second -= tmp;
+                    memmove(bufs[i].first, bufs[i].first + tmp, 
+                            bufs[i].second * sizeof(char));
+                }
             }
         }
-        if (fd[2].revents && POLLIN)
+        if (fd[1].revents && POLLIN)
+        {
+            int len = 
+                read(STDIN, bufs[1].first + bufs[2].second, BUF_SIZE - bufs[2].second);
+            bufs[1].second += len;
+            if (int delim = check_ready(bufs[1]) != -1){
+                if (check_correct(bufs[1], delim))
+                {
+                    mes message = parse(bufs[1], delim);
+                    message.id += id;
+                    id++;
+                    add(m, message);
+                    string str = mes2str(message);
+                    send2all(bufs, str, 1);
+                }
+                bufs[1].second -= delim - 1;
+                memmove(bufs[1].first, bufs[1].first + delim + 1, 
+                                sizeof(char) * (delim + 1)); 
+            }
+            if (is_print(bufs[1]))
+            {
+                print(m);
+            } 
+        }
+        if (fd[0].revents && POLLIN)
         {
             int cfd = accept(sfd, &address, &address_len); 
             if (cfd == -1)
