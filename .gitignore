@@ -1,2 +1,12 @@
 *~
 main
+bintreed/bintreed
+filter/script
+midterm/midterm
+midterm/test*.t
+siout_runner/gen*
+siout_runner/*put*
+siout_runner/runner
+siout_runner/test
+
+
