@@ -14,6 +14,7 @@
 #include <utility>
 #include <set>
 #include <algorithm>
+#include <sstream>
 
 #define STDIN 0
 #define STDOUT 1
@@ -100,10 +101,10 @@ int check_ready(const pair<char *, int> &p)
 
 bool is_print(const pair<char *, int> &p)
 {
-    if (p.second > 6)
+    if (p.second > 5)
     {
         if (p.first[0] == 'p' && p.first[1] == 'r' && p.first[2] == 'i' && 
-                p.first[3] == 'n' && p.first[4] == 't' && p.first[5] == '\n')
+                p.first[3] == 'n' && p.first[4] == 't' && p.first[5] == '#')
         {
             return true;
         }
@@ -154,26 +155,27 @@ mes parse(const pair<char *, int> &p, int del)
     int to = 0;
     int state = 0;
     mes m;
-    for (int i = 0; i < del; i++)
+    for (int i = 0; i < del + 1; i++)
     {
-        if (p.first[i] == '@')
+        if (p.first[i] == '@' || p.first[i] == '#')
         {
             to = i;
+            string s(p.first + from, to - from);
             if (state == 0)
             {
-                m.key = string(p.first[from], to - from);
+                m.key = s;
             }
             if (state == 1)
             {
-                m.value = string(p.first[from], to - from);
+                m.value = s;
             }
             if (state == 2)
             {
-                m.new_value = string(p.first[from], to - from);
+                m.new_value = s;
             }
             if (state == 3)
             {
-                m.id = string(p.first[from], to - from);
+                m.id = s;
             }
             state++;
             from = i + 1;
@@ -199,7 +201,8 @@ bool is_collision(map<string, pair<vector<string>,
         set<string> > >::iterator it, mes message)
 {
     vector<string> v = it->second.first;
-    if (find(v.begin(), v.end(), message.value) != v.end())
+    if (find(v.begin(), v.end(), message.value) != v.end() &&
+            v[v.size() - 1] != message.value)
     {
         return true;
     }
@@ -211,8 +214,8 @@ bool is_collision(map<string, pair<vector<string>,
 
 void add(map<string, pair<vector<string>, set<string> > > &m, mes message)
 {
-    m[message.value].first.push_back(message.new_value);
-    m[message.value].second.insert(message.id);
+    m[message.key].first.push_back(message.new_value);
+    m[message.key].second.insert(message.id);
 }
 
 string mes2str(mes message)
@@ -231,8 +234,50 @@ void send2all(vector<pair<char*, int> > &bufs, string message, size_t j)
             {
                 bufs[i].first[bufs[i].second + k] = message[k];
             }
+            bufs[i].second += message.size();
         }
     }
+}
+
+void print(vector<pair<char*, int> > &bufs, const map<string, pair<vector<string>, set<string> > > & m)
+{
+    auto i = bufs[2].second;
+    for (auto it = m.begin(); it != m.end(); it++)
+    {
+        for (size_t j = 0; j < it->first.size(); j++)
+        {
+            bufs[2].first[i++] = it->first[j];
+        }
+        bufs[2].first[i++] = '-';
+        bufs[2].first[i++] = '>';
+        for (size_t k = 0; k < it->second.first.size(); k++)
+        {
+            for (size_t j = 0; j < it->second.first[k].size(); j++)
+            {
+                bufs[2].first[i++] = it->second.first[k][j];
+            }
+            if (k + 1 != it->second.first.size())
+            {
+                bufs[2].first[i++] = ',';
+            } 
+            else
+            {
+                bufs[2].first[i++] = '\n';
+            }
+        }
+    }
+    bufs[2].second = i;
+}
+
+void cut_lines(pair<char *, int> &p)
+{
+    int count = 0;
+    while (p.first[count] == '\n')
+    {
+        count++;
+    }
+    p.second -= count;
+    memmove(p.first, p.first + count, p.second);
 }
 
 //format key@value@new_value@id#
@@ -247,7 +292,10 @@ int main(int argc, char* argv[])
     string port(argv[1]); 
     vector<addr> css;
     map<string, pair<vector<string>, set<string> > > m;
-    vector<pair<char*, int> > bufs(3);
+    vector<pair<char*, int> > bufs;
+    bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
+    bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
+    bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
 
     for (int i = 2; i < argc; ++i)
     {
@@ -348,13 +396,16 @@ int main(int argc, char* argv[])
     while (true)
     {
         my_poll(fd, clients);
-        for (int i = 2; i < clients; i++)
+        for (int i = 1; i < clients; i++)
         {
             if (fd[i].revents & (POLLERR | POLLHUP))
             {
-                fd[i] = fd[clients - 1];
-                fd[i].events = fd[clients - 1].events;
-                clients--;
+                int j = j - ((i % 2) ^ 1);
+                fd[j] = fd[clients - 2];
+                fd[j].events = fd[clients - 2].events;
+                fd[j + 1] = fd[clients - 1];
+                fd[j + 1].events = fd[clients - 1].events;
+                clients -= 2;
                 continue;
             }
             if (fd[i].revents & POLLIN)
@@ -362,52 +413,66 @@ int main(int argc, char* argv[])
                 int len = my_read(fd[i].fd, bufs[i].first + bufs[i].second, 
                         BUF_SIZE - bufs[i].second);
                 bufs[i].second += len;
-                if (int delim = check_ready(bufs[i]) != -1)
+                cut_lines(bufs[i]);
+                
+                int delim;
+                if ((delim = check_ready(bufs[i])) != -1)
                 {
+                    if (i == 1 && is_print(bufs[i]))
+                    {
+                        print(bufs, m);
+                    }
+                    else
                     if (check_correct(bufs[i], delim))
                     {
                         mes message = parse(bufs[i], delim);
-                        if (message.new_value == collision)
+                        if (i == 1)
                         {
-                            add(m, message);
-                            string str = mes2str(message);
-                            send2all(bufs, str, i);
+                            stringstream ss;
+                            ss << id;
+                            string s;
+                            ss >> s;
+                            message.id += s;
+                            id++;
+                        }
+                        auto it = m.find(message.key);
+                        if (it == m.end())
+                        {
+                            if (message.value == collision)
+                            {
+                                pair<vector<string>, set<string> > p;
+                                p.first = vector<string>();
+                                p.second = set<string>();
+                                p.first.push_back(collision);
+                                m[message.key] = p;
+                                add(m, message);
+                                string str = mes2str(message);
+                                send2all(bufs, str, i + 1);
+                            }
                         }
                         else
-                        { 
-                            auto it = m.find(message.key);
-                            if (it == m.end())
+                        {
+                            if (!is_again(it, message))
                             {
-                                if (message.value == collision)
+                                if (is_collision(it, message))
                                 {
-                                    pair<vector<string>, set<string> > p;
-                                    p.first = vector<string>();
-                                    p.second = set<string>();
-                                    p.first.push_back(message.new_value);
-                                    p.second.insert(message.id);
-                                    m[message.key] = p;
+                                    message.new_value = collision;
                                 }
-                            }
-                            else
-                            {
-                                if (!is_again(it, message))
+                                if (message.new_value == collision ||
+                                        message.value == it->second.first.back())
                                 {
-                                    if (is_collision(it, message))
-                                    {
-                                        message.new_value = collision;
-                                    }
                                     add(m, message);
                                     string str = mes2str(message);
-                                    send2all(bufs, str, i);
+                                    send2all(bufs, str, i + 1);
                                 }
                             }
                         }
                     }
-                    bufs[i].second -= delim - 1;
+                    bufs[i].second -= delim + 1;
                     memmove(bufs[i].first, bufs[i].first + delim + 1, 
-                                sizeof(char) * (delim + 1)); 
+                                sizeof(char) * (bufs[i].second)); 
                 } 
-
+                
             }
             if (fd[i].revents & POLLOUT)
             {
@@ -420,30 +485,6 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        if (fd[1].revents && POLLIN)
-        {
-            int len = 
-                read(STDIN, bufs[1].first + bufs[2].second, BUF_SIZE - bufs[2].second);
-            bufs[1].second += len;
-            if (int delim = check_ready(bufs[1]) != -1){
-                if (check_correct(bufs[1], delim))
-                {
-                    mes message = parse(bufs[1], delim);
-                    message.id += id;
-                    id++;
-                    add(m, message);
-                    string str = mes2str(message);
-                    send2all(bufs, str, 1);
-                }
-                bufs[1].second -= delim - 1;
-                memmove(bufs[1].first, bufs[1].first + delim + 1, 
-                                sizeof(char) * (delim + 1)); 
-            }
-            if (is_print(bufs[1]))
-            {
-                print(m);
-            } 
-        }
         if (fd[0].revents && POLLIN)
         {
             int cfd = accept(sfd, &address, &address_len); 
@@ -454,8 +495,11 @@ int main(int argc, char* argv[])
             }
             perror("accepted");
             fd[clients].fd = cfd;
-            fd[clients].events = POLLIN;
-            clients++;
+            fd[clients++].events = POLLIN;
+            fd[clients].fd = cfd;
+            fd[clients++].events = POLLOUT;
+            bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
+            bufs.push_back(pair<char *, int>((char *) my_malloc(BUF_SIZE), 0));
         }
     }
     close(sfd);
